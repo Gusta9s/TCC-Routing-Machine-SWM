@@ -4,8 +4,8 @@
   "description": "Uma aplicação web para exibir mapas interativos com cálculo de rotas.",
   "main": "src/js/main.js",
   "scripts": {
-    "start": "webpack-dev-server --mode development --open",
-    "build": "webpack --mode production"
+    "build": "webpack --mode production",
+    "start": "webpack-dev-server --mode development --open"
   },
   "author": "Gustavo de Almeida Pacheco <gustavoapacheco@yahoo.com.br>",
   "license": "ISC",
@@ -20,6 +20,8 @@
     "copy-webpack-plugin": "^13.0.0",
     "css-loader": "^7.1.2",
     "html-webpack-plugin": "^5.6.0",
+    "sass": "^1.89.2",
+    "sass-loader": "^16.0.5",
     "style-loader": "^4.0.0",
     "webpack": "^5.92.1",
     "webpack-cli": "^5.1.4",

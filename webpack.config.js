@@ -1,7 +1,6 @@
 // webpack.config.js
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 module.exports = (env, argv) => {
   // Determina se estamos em modo de produção ou desenvolvimento
@@ -40,7 +39,7 @@ module.exports = (env, argv) => {
       // Porta em que o servidor irá rodar.
       port: 3004,
       // Abre o navegador automaticamente quando o servidor inicia.
-      open: false,
+      open: true,
       // Habilita o Hot Module Replacement (HMR) para atualizações sem recarregar a página.
       hot: true,
     },
@@ -85,19 +84,7 @@ module.exports = (env, argv) => {
         filename: 'index.html', // Nome do arquivo de saída
         // Injeta os scripts no final do body
         inject: 'body',
-      }),
-      
-      // Plugin para copiar arquivos estáticos.
-      // Crucial para as imagens padrão do Leaflet que são referenciadas dinamicamente no CSS.
-      new CopyWebpackPlugin({
-        patterns: [
-          {
-            from: path.resolve(__dirname, 'node_modules/leaflet/dist/images'),
-            to: path.resolve(__dirname, 'dist/images')
-          }
-        ]
-      })
-    ],
+      })],
 
     // Gera Source Maps para facilitar o debug, mapeando o código compilado de volta ao original.
     // 'eval-source-map' é rápido para desenvolvimento.
