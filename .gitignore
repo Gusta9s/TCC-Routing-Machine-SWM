@@ -23,6 +23,7 @@ yarn-error.log*
 .env.development.local
 .env.test.local
 .env.production.local
+credentials.json
 
 # Permite que o arquivo de exemplo de .env seja versionado.
 !.env.example
@@ -42,3 +43,6 @@ Thumbs.db
 # Cache
 .npm/
 .yarn/cache
+
+# Arquivo de imagens gerados
+assets/images/*.png

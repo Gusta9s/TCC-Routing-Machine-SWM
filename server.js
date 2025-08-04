@@ -4,21 +4,55 @@ const express = require('express');
 const puppeteer = require('puppeteer');
 const path = require('path');
 const fetch = require('node-fetch');
+const fs = require('fs').promises;
 
 const app = express();
 const PORT = 3004;
 const MAPBOX_API_KEY = 'pk.eyJ1IjoiZ3VzdGE5cyIsImEiOiJjbWRjYnUxZDgwOXQ5MmxvaWdtYWg3MjlvIn0.7BKbWKCNgW-Gxt2gC9151g';
+
+const IMAGES_DIR = path.join(__dirname, 'assets', 'images');
 
 app.use(express.json());
 
 // NOVO: Serve os arquivos do Leaflet diretamente da pasta node_modules
 app.use('/leaflet', express.static(path.join(__dirname, 'node_modules/leaflet/dist')));
 
+let fileCounter = 0;
 
 let htmlParaRenderizar = '';
 app.get('/render-map', (req, res) => {
   res.send(htmlParaRenderizar);
 });
+
+/**
+ * Encontra o próximo número de arquivo disponível no diretório de imagens.
+ * Ex: se 'rota5.png' for o maior, esta função retornará 6.
+ * @returns {Promise<number>} O próximo número na sequência.
+ */
+async function getNextRouteNumber() {
+  try {
+    // Garante que o diretório exista, criando-o se necessário
+    await fs.mkdir(IMAGES_DIR, { recursive: true });
+
+    const files = await fs.readdir(IMAGES_DIR);
+    const routeFiles = files.filter(file => /^rota(\d+)\.png$/.test(file));
+    
+    if (routeFiles.length === 0) {
+      return 1; // Se não houver arquivos, começa com 1
+    }
+
+    const highestNumber = routeFiles.reduce((max, file) => {
+      const match = file.match(/^rota(\d+)\.png$/);
+      const currentNum = parseInt(match[1], 10);
+      return currentNum > max ? currentNum : max;
+    }, 0);
+
+    return highestNumber + 1;
+  } catch (error) {
+    console.error("Erro ao determinar o próximo número de arquivo:", error);
+    return 1; // Retorna 1 em caso de erro
+  }
+}
 
 function generateMapHtml(payload, routeGeometry) {
   const { origem_latitude, origem_longitude, destino_latitude, destino_longitude } = payload;
@@ -76,8 +110,11 @@ app.post('/api/gerar-imagem-rota', async (req, res) => {
     const routeGeometry = data.routes[0].geometry;
 
     htmlParaRenderizar = generateMapHtml(payload, routeGeometry);
-    
-    const outputPath = path.join(__dirname, 'rota.png');
+
+    const nextRouteNumber = await getNextRouteNumber();
+    const fileName = `rota${nextRouteNumber}.png`;
+    const outputPath = path.join(IMAGES_DIR, fileName);
+
     browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
     const page = await browser.newPage();
     page.on('console', msg => console.log('CONSOLE DO NAVEGADOR:', msg.text()));
@@ -89,8 +126,13 @@ app.post('/api/gerar-imagem-rota', async (req, res) => {
     const mapElement = await page.$('#map');
     await mapElement.screenshot({ path: outputPath });
 
-    console.log('Imagem da rota gerada com sucesso em:', outputPath);
-    res.sendFile(outputPath);
+    console.log(`Imagem '${fileName}' gerada com sucesso em: ${outputPath}`);
+
+    res.status(200).json({ 
+      success: true,
+      message: 'Imagem gerada com sucesso.',
+      filename: fileName 
+    });
 
   } catch (error) {
     console.error('Erro no processo de geração de imagem:', error);
