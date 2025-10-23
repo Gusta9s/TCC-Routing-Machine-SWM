@@ -1,4 +1,6 @@
-// server.js - Versão Final Autocontida
+/**
+ * Processo de carregamento de módulos e configuração do servidor Express
+ */
 
 const express = require('express');
 const puppeteer = require('puppeteer');
@@ -14,12 +16,17 @@ const IMAGES_DIR = path.join(__dirname, 'assets', 'images');
 
 app.use(express.json());
 
-// NOVO: Serve os arquivos do Leaflet diretamente da pasta node_modules
 app.use('/leaflet', express.static(path.join(__dirname, 'node_modules/leaflet/dist')));
 
 let fileCounter = 0;
 
 let htmlParaRenderizar = '';
+
+/** 
+ * Metodo para encaminhar o HTML para renderização
+ * @returns {string} HTML para renderizar o mapa
+ */
+
 app.get('/render-map', (req, res) => {
   res.send(htmlParaRenderizar);
 });
@@ -29,16 +36,16 @@ app.get('/render-map', (req, res) => {
  * Ex: se 'rota5.png' for o maior, esta função retornará 6.
  * @returns {Promise<number>} O próximo número na sequência.
  */
+
 async function getNextRouteNumber() {
   try {
-    // Garante que o diretório exista, criando-o se necessário
     await fs.mkdir(IMAGES_DIR, { recursive: true });
 
     const files = await fs.readdir(IMAGES_DIR);
     const routeFiles = files.filter(file => /^rota(\d+)\.png$/.test(file));
     
     if (routeFiles.length === 0) {
-      return 1; // Se não houver arquivos, começa com 1
+      return 1;
     }
 
     const highestNumber = routeFiles.reduce((max, file) => {
@@ -50,9 +57,16 @@ async function getNextRouteNumber() {
     return highestNumber + 1;
   } catch (error) {
     console.error("Erro ao determinar o próximo número de arquivo:", error);
-    return 1; // Retorna 1 em caso de erro
+    return 1;
   }
 }
+
+/**
+ * Gera o HTML para renderizar o mapa com base nos dados fornecidos.
+ * @param {*} payload - Os dados da requisição, incluindo informações de origem e destino.
+ * @param {*} routeGeometry - A geometria da rota a ser renderizada no mapa.
+ * @returns {string} O HTML para renderizar o mapa.
+ */
 
 function generateMapHtml(payload, routeGeometry) {
   const { origem_latitude, origem_longitude, destino_latitude, destino_longitude } = payload;
@@ -75,7 +89,7 @@ function generateMapHtml(payload, routeGeometry) {
       L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/streets-v11/tiles/{z}/{x}/{y}?access_token=${MAPBOX_API_KEY}').addTo(map);
 
       const blueIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png', shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] });
-      const greenIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png', shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] });
+      const greenIcon = new L.Icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/2634/2634066.png', iconSize: [40, 40], iconAnchor: [20, 40], popupAnchor: [1, -34] });
 
       const originMarker = L.marker([${origem_latitude}, ${origem_longitude}], { icon: blueIcon }).addTo(map);
       const destinationMarker = L.marker([${destino_latitude}, ${destino_longitude}], { icon: greenIcon }).addTo(map);
@@ -89,9 +103,12 @@ function generateMapHtml(payload, routeGeometry) {
   `;
 }
 
-// O endpoint POST continua o mesmo
+/**
+ * Endpoint para gerar a imagem da rota
+ * @returns {json} Resultado da geração da imagem
+ */
+
 app.post('/api/gerar-imagem-rota', async (req, res) => {
-  // ... (O resto do código do endpoint continua exatamente o mesmo) ...
   if (!MAPBOX_API_KEY) {
     return res.status(500).json({ error: 'A chave de API da Mapbox não foi configurada.' });
   }
@@ -144,6 +161,9 @@ app.post('/api/gerar-imagem-rota', async (req, res) => {
   }
 });
 
+/**
+ * Inicialização do servidor Express
+ */
 
 app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);

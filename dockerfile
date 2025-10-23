@@ -1,24 +1,24 @@
 # Estágio 1: Build das dependências (Builder)
 FROM node:18-slim AS builder
 
+# Cria um diretório de trabalho
 WORKDIR /app
 
 # Copia os arquivos de dependência
 COPY package*.json ./
 
-# **A CORREÇÃO ESTÁ AQUI**
-# Dá a posse do diretório /app para o usuário 'node' (que já existe na imagem)
+# Dá a posse do diretório /app para o usuário 'node'
 RUN chown -R node:node /app
 
 # Muda para o usuário 'node'
 USER node
 
-# Executa o 'npm install' como usuário 'node', que agora tem permissão para escrever em /app
+# Executa o 'npm install' que tambem se chama injeção de dependências como usuário 'node'
 RUN npm install
 
 # ---
 
-# Estágio 2: Imagem final de produção
+# Estágio 2: Divide para duas imagens diferentes, para instalacao das dependencias da imagem do sistema operacional
 FROM node:18-slim
 
 # Instala as dependências de sistema do Puppeteer na imagem final
@@ -32,21 +32,24 @@ RUN apt-get update \
     lsb-release wget xdg-utils \
     && rm -rf /var/lib/apt/lists/*
 
+# Cria um diretório de trabalho apenas para estas dependências
 WORKDIR /app
 
 # Copia o código da aplicação e define o 'node' como dono
 COPY --chown=node:node server.js .
 
-# Copia as dependências e o cache do navegador do estágio anterior
+# Copia as dependências e o cache do navegador do estágio anterior (Para melhor performance e caso haja atualizacoes nos pacotes instalados ele efetua a reinstalacao novamente)
 COPY --chown=node:node --from=builder /app/node_modules ./node_modules
 COPY --chown=node:node --from=builder /home/node/.cache /home/node/.cache
 
-# Garante que o diretório de assets exista e pertença ao usuário 'node'
+# Garante que o diretório de assets (recursos) exista e pertença ao usuário 'node'
 RUN mkdir -p assets/images && chown -R node:node assets
 
 # Muda para o usuário 'node' para executar a aplicação
 USER node
 
+# Inicializa a aplicação na porta 3004
 EXPOSE 3004
 
+# Comando para iniciar a aplicação
 CMD [ "node", "server.js" ]
