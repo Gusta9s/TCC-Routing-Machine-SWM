@@ -24,6 +24,7 @@ FROM node:18-slim
 # Instala as dependências de sistema do Puppeteer na imagem final
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
+    curl \
     ca-certificates fonts-liberation libasound2 libatk-bridge2.0-0 libatk1.0-0 libcairo2 \
     libcups2 libdbus-1-3 libexpat1 libfontconfig1 libgbm1 libgdk-pixbuf2.0-0 \
     libglib2.0-0 libgtk-3-0 libnspr4 libnss3 libpango-1.0-0 libpangocairo-1.0-0 \
@@ -46,7 +47,10 @@ COPY --chown=node:node --from=builder /home/node/.cache /home/node/.cache
 RUN mkdir -p assets/images && chown -R node:node assets
 
 # Muda para o usuário 'node' para executar a aplicação
-USER node
+#USER node
+
+# Diz ao Puppeteer para usar o cache do usuário 'node', mesmo rodando como 'root'
+ENV PUPPETEER_CACHE_DIR=/home/node/.cache/puppeteer
 
 # Inicializa a aplicação na porta 3004
 EXPOSE 3004
