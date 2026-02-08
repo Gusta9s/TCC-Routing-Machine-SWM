@@ -9,8 +9,8 @@ const fetch = require('node-fetch');
 const fs = require('fs').promises;
 
 const app = express();
-const PORT = 3004;
-const MAPBOX_API_KEY = 'pk.eyJ1IjoiZ3VzdGE5cyIsImEiOiJjbWRjYnUxZDgwOXQ5MmxvaWdtYWg3MjlvIn0.7BKbWKCNgW-Gxt2gC9151g';
+const PORT = process.env.PORT; 
+const MAPBOX_API_KEY = process.env.MAPBOX_API_KEY;
 
 const IMAGES_DIR = path.join(__dirname, 'assets', 'images');
 
@@ -134,11 +134,24 @@ app.post('/api/gerar-imagem-rota', async (req, res) => {
 
     browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
     const page = await browser.newPage();
+    
+    // Configura o timeout de navegação padrão para 2 minutos (120000ms)
+    page.setDefaultNavigationTimeout(120000);
+    
     page.on('console', msg => console.log('CONSOLE DO NAVEGADOR:', msg.text()));
     
-    await page.goto(`http://localhost:${PORT}/render-map`, { waitUntil: 'domcontentloaded' });
+    console.log("Navegando para o mapa...");
+
+    // 1. Carregamento com timeout de segurança de 2 minutos
+    await page.goto(`http://localhost:${PORT}/render-map`, { 
+        waitUntil: 'networkidle0',
+        timeout: 120000 
+    });
+
+    console.log("Página carregada. Aguardando 1 minuto para renderização completa...");
     
-    await new Promise(resolve => setTimeout(resolve, 2500));
+    // 2. Sleep forçado de 1 minuto (60000 ms) para garantir renderização dos tiles
+    await new Promise(resolve => setTimeout(resolve, 60000));
 
     const mapElement = await page.$('#map');
     await mapElement.screenshot({ path: outputPath });
@@ -165,6 +178,7 @@ app.post('/api/gerar-imagem-rota', async (req, res) => {
  * Inicialização do servidor Express
  */
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
 });
+server.setTimeout(130000); // 2 minutos e 10 segundos para o servidor não cortar a conexão
