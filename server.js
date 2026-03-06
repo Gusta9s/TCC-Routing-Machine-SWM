@@ -175,10 +175,14 @@ app.post('/api/gerar-imagem-rota', async (req, res) => {
 });
 
 /**
- * Inicialização do servidor Express
+ * Inicialização do servidor Express (Apenas se não estiver rodando via testes)
  */
+if (require.main === module) {
+  const server = app.listen(PORT, () => {
+    console.log(`Servidor rodando em http://localhost:${PORT}`);
+  });
+  server.setTimeout(130000); // 2 minutos e 10 segundos
+}
 
-const server = app.listen(PORT, () => {
-  console.log(`Servidor rodando em http://localhost:${PORT}`);
-});
-server.setTimeout(130000); // 2 minutos e 10 segundos para o servidor não cortar a conexão
+// Exporta as funções e a aplicação para que o Jest consiga testá-las
+module.exports = { app, getNextRouteNumber, generateMapHtml };
